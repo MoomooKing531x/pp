@@ -62,20 +62,26 @@ public class WeaponListener implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
-        if (!player.isSneaking()) {
-            return;
-        }
-        event.setCancelled(true);
-
-        if (!this.plugin.isFeatureEnabled(Feature.ABILITIES)) {
-            player.sendMessage(this.plugin.bannerPrefix() + ChatColor.RED + "Nose abilities are currently disabled.");
-            return;
-        }
-
         NoseItem.NoseType type = NoseItem.getNoseType(item, this.plugin);
+
+        // Booger Sniper has a tap-to-start / tap-to-fire lifecycle independent
+        // of the sneak-gated abilities. If the player is already mid-charge,
+        // any right-click releases the shot.
         if (type == NoseItem.NoseType.BOOGER_SNIPER) {
-            // Booger Sniper has its own charge lifecycle: begin charging unless
-            // already charging or cooling down.
+            BoogerCharge existing = this.activeCharges.get(player.getUniqueId());
+            if (existing != null) {
+                event.setCancelled(true);
+                existing.release(ReleaseReason.TAP_FIRE);
+                return;
+            }
+            if (!player.isSneaking()) {
+                return;
+            }
+            event.setCancelled(true);
+            if (!this.plugin.isFeatureEnabled(Feature.ABILITIES)) {
+                player.sendMessage(this.plugin.bannerPrefix() + ChatColor.RED + "Nose abilities are currently disabled.");
+                return;
+            }
             if (this.isOnCooldown(player, type)) {
                 player.sendMessage(this.plugin.bannerPrefix() + ChatColor.YELLOW
                     + "Booger Sniper on cooldown! " + this.getCooldownRemaining(player, type) + "s remaining.");
@@ -85,6 +91,15 @@ public class WeaponListener implements Listener {
             return;
         }
 
+        if (!player.isSneaking()) {
+            return;
+        }
+        event.setCancelled(true);
+
+        if (!this.plugin.isFeatureEnabled(Feature.ABILITIES)) {
+            player.sendMessage(this.plugin.bannerPrefix() + ChatColor.RED + "Nose abilities are currently disabled.");
+            return;
+        }
         if (this.isOnCooldown(player, type)) {
             long seconds = this.getCooldownRemaining(player, type);
             player.sendMessage(this.plugin.bannerPrefix() + ChatColor.YELLOW + "Ability on cooldown! " + seconds + "s remaining.");
@@ -116,14 +131,10 @@ public class WeaponListener implements Listener {
 
     @EventHandler
     public void onToggleSneak(PlayerToggleSneakEvent event) {
-        if (event.isSneaking()) {
-            return;
-        }
-        // Releasing sneak is the primary fire trigger for Booger Sniper.
-        BoogerCharge charge = this.activeCharges.get(event.getPlayer().getUniqueId());
-        if (charge != null) {
-            charge.release(ReleaseReason.UN_SNEAK);
-        }
+        // Booger Sniper fires on a second right-click (see TAP_FIRE). Releasing
+        // sneak does NOT fire -- the player can toggle sneak freely while
+        // aiming. The charge is only auto-released if they switch away from
+        // the weapon or reach max charge.
     }
 
     private void updatePassiveEffects(Player p) {
@@ -196,7 +207,7 @@ public class WeaponListener implements Listener {
                 }
             }.runTaskTimer(this.plugin, 0L, 2L);
         }
-        this.setCooldown(p, NoseItem.NoseType.BLOODY, NoseItem.NoseType.BLOODY.cooldownSeconds);
+        this.setCooldown(p, NoseItem.NoseType.BLOODY, this.plugin.getCooldownFor(NoseItem.NoseType.BLOODY));
     }
 
     private void activateSnotty(Player p) {
@@ -227,7 +238,7 @@ public class WeaponListener implements Listener {
             p.sendMessage(this.plugin.bannerPrefix() + ChatColor.GRAY + "No players nearby to snot!");
             return;
         }
-        this.setCooldown(p, NoseItem.NoseType.SNOTTY, NoseItem.NoseType.SNOTTY.cooldownSeconds);
+        this.setCooldown(p, NoseItem.NoseType.SNOTTY, this.plugin.getCooldownFor(NoseItem.NoseType.SNOTTY));
         p.sendMessage(this.plugin.bannerPrefix() + ChatColor.GREEN + "Snotty Nose activated!");
         p.getWorld().playSound(p.getLocation(), Sound.ENTITY_SLIME_SQUISH, 1.0f, 1.0f);
         if (this.plugin.isFeatureEnabled(Feature.PARTICLES)) {
@@ -266,7 +277,7 @@ public class WeaponListener implements Listener {
             p.sendMessage(this.plugin.bannerPrefix() + ChatColor.GRAY + "No players nearby to suck!");
             return;
         }
-        this.setCooldown(p, NoseItem.NoseType.SNORING, NoseItem.NoseType.SNORING.cooldownSeconds);
+        this.setCooldown(p, NoseItem.NoseType.SNORING, this.plugin.getCooldownFor(NoseItem.NoseType.SNORING));
         p.sendMessage(this.plugin.bannerPrefix() + ChatColor.YELLOW + "Snoring Nose activated!");
         p.getWorld().playSound(p.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 1.0f, 0.5f);
         if (this.plugin.isFeatureEnabled(Feature.PARTICLES)) {
@@ -292,7 +303,7 @@ public class WeaponListener implements Listener {
     private void activateSneezing(Player p) {
         Vector dir = p.getLocation().getDirection().normalize().multiply(2.5).setY(0.5);
         p.setVelocity(dir);
-        this.setCooldown(p, NoseItem.NoseType.SNEEZING, NoseItem.NoseType.SNEEZING.cooldownSeconds);
+        this.setCooldown(p, NoseItem.NoseType.SNEEZING, this.plugin.getCooldownFor(NoseItem.NoseType.SNEEZING));
         p.sendMessage(this.plugin.bannerPrefix() + ChatColor.AQUA + "Sneezing Nose activated!");
         p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PANDA_SNEEZE, 1.0f, 1.0f);
         if (this.plugin.isFeatureEnabled(Feature.PARTICLES)) {
@@ -319,17 +330,89 @@ public class WeaponListener implements Listener {
 
     private void activateSnotBubble(final Player p) {
         p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 140, 1));
-        this.setCooldown(p, NoseItem.NoseType.SNOT_BUBBLE, NoseItem.NoseType.SNOT_BUBBLE.cooldownSeconds);
+        this.setCooldown(p, NoseItem.NoseType.SNOT_BUBBLE, this.plugin.getCooldownFor(NoseItem.NoseType.SNOT_BUBBLE));
         p.sendMessage(this.plugin.bannerPrefix() + ChatColor.BLUE + "Snot Bubble activated! Resistance II for 7 seconds.");
         p.getWorld().playSound(p.getLocation(), Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, 1.0f, 1.0f);
         if (!this.plugin.isFeatureEnabled(Feature.PARTICLES)) {
+            return;
+        }
+        // Realistic shield burst: for the first second, paint a dense, visible
+        // bubble dome around the player (fixed lat/long grid of pale-blue dust
+        // + bubble-pop particles), accompanied by a shield-up sound.
+        p.getWorld().playSound(p.getLocation(), Sound.ITEM_TOTEM_USE, 0.6f, 1.8f);
+        final Particle.DustOptions shellDust =
+            new Particle.DustOptions(Color.fromRGB(180, 230, 255), 1.4f);
+        final Particle.DustOptions rimDust =
+            new Particle.DustOptions(Color.fromRGB(120, 200, 255), 1.1f);
+        final double shieldRadius = 1.6;
+        new BukkitRunnable() {
+            int ticks = 0;
+            @Override
+            public void run() {
+                if (!p.isOnline() || this.ticks++ >= 20) {
+                    if (p.isOnline()) {
+                        // Pop sound as the shield dissolves into the ongoing bubble.
+                        p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_SPLASH, 0.8f, 1.4f);
+                        p.getWorld().spawnParticle(Particle.EXPLOSION, p.getLocation().add(0, 1.0, 0), 1);
+                    }
+                    this.cancel();
+                    return;
+                }
+                Location centre = p.getLocation().add(0.0, 1.0, 0.0);
+                // lat/long grid for a clearly visible dome.
+                int latSteps = 9;
+                int lonSteps = 18;
+                for (int lat = 0; lat < latSteps; lat++) {
+                    double phi = Math.PI * (lat + 0.5) / latSteps;
+                    double sinPhi = Math.sin(phi);
+                    double cosPhi = Math.cos(phi);
+                    for (int lon = 0; lon < lonSteps; lon++) {
+                        double theta = 2 * Math.PI * lon / lonSteps;
+                        double x = shieldRadius * sinPhi * Math.cos(theta);
+                        double y = shieldRadius * cosPhi;
+                        double z = shieldRadius * sinPhi * Math.sin(theta);
+                        centre.getWorld().spawnParticle(Particle.DUST,
+                            centre.clone().add(x, y, z), 1, 0.0, 0.0, 0.0, 0.0, shellDust);
+                    }
+                }
+                // Extra equatorial rim for a hard-edged "shield ring" look.
+                int ringSteps = 32;
+                double ringY = 0.0;
+                for (int i = 0; i < ringSteps; i++) {
+                    double theta = 2 * Math.PI * i / ringSteps;
+                    centre.getWorld().spawnParticle(Particle.DUST,
+                        centre.clone().add(
+                            shieldRadius * Math.cos(theta), ringY, shieldRadius * Math.sin(theta)),
+                        1, 0.0, 0.0, 0.0, 0.0, rimDust);
+                }
+                // Scatter bubble pops on the shell surface for depth.
+                for (int i = 0; i < 8; i++) {
+                    double th = 2 * Math.PI * WeaponListener.this.random.nextDouble();
+                    double ph = Math.acos(2.0 * WeaponListener.this.random.nextDouble() - 1.0);
+                    centre.getWorld().spawnParticle(Particle.BUBBLE_POP,
+                        centre.clone().add(
+                            shieldRadius * Math.sin(ph) * Math.cos(th),
+                            shieldRadius * Math.cos(ph),
+                            shieldRadius * Math.sin(ph) * Math.sin(th)),
+                        1);
+                }
+            }
+        }.runTaskTimer(this.plugin, 0L, 1L);
+
+        // After the 1-second shield burst, the original ongoing bubble effect
+        // continues for the remaining 6 seconds of Resistance II.
+        Bukkit.getScheduler().runTaskLater(this.plugin, () -> this.runSnotBubbleAmbient(p), 20L);
+    }
+
+    private void runSnotBubbleAmbient(final Player p) {
+        if (!p.isOnline() || !this.plugin.isFeatureEnabled(Feature.PARTICLES)) {
             return;
         }
         new BukkitRunnable() {
             int ticks = 0;
             @Override
             public void run() {
-                if (!p.isOnline() || this.ticks++ >= 140) {
+                if (!p.isOnline() || this.ticks++ >= 120) {
                     this.cancel();
                     return;
                 }
@@ -354,7 +437,7 @@ public class WeaponListener implements Listener {
     }
 
     private void activateEnderDragon(Player p) {
-        this.setCooldown(p, NoseItem.NoseType.ENDER_DRAGON, NoseItem.NoseType.ENDER_DRAGON.cooldownSeconds);
+        this.setCooldown(p, NoseItem.NoseType.ENDER_DRAGON, this.plugin.getCooldownFor(NoseItem.NoseType.ENDER_DRAGON));
         Fireball fb = p.launchProjectile(Fireball.class);
         fb.setShooter((ProjectileSource) p);
         fb.setYield(4.5f);
@@ -389,19 +472,25 @@ public class WeaponListener implements Listener {
     private static final int TICKS_PER_SECOND = 20;
     private static final int MAX_CHARGE_TICKS = 5 * TICKS_PER_SECOND;
 
-    /** Per-level tuning: {damage, projectileCount, cooldownSeconds}. */
+    /**
+     * Per-level tuning: {damage, projectileCount, cooldownSeconds}. The default
+     * max-charge cooldown is 40s; scaled down from there for lower charge
+     * levels. Runtime overrides set via {@code /nosecooldown booger_sniper}
+     * apply a proportional scale to each level.
+     */
     private static final int[][] LEVEL_TUNING = {
         // Level 0 is "not charged enough" -- no fire, no cooldown.
         {0, 0, 0},
-        {6, 1, 20},   // 1s: single small booger
-        {12, 1, 30},  // 2s: medium booger
-        {10, 3, 50},  // 3s: 3-pellet spread
-        {20, 1, 70},  // 4s: big booger
-        {16, 5, 100}, // 5s: shotgun blast of 5 pellets (max charge)
+        {6, 1, 8},    // 1s: single small booger
+        {12, 1, 14},  // 2s: medium booger
+        {10, 3, 22},  // 3s: 3-pellet spread
+        {20, 1, 30},  // 4s: big booger
+        {16, 5, 40},  // 5s: shotgun blast of 5 pellets (max charge)
     };
+    private static final int DEFAULT_MAX_COOLDOWN = 40;
 
     private enum ReleaseReason {
-        UN_SNEAK, ITEM_SWAPPED, MAX_REACHED, CANCELLED
+        TAP_FIRE, ITEM_SWAPPED, MAX_REACHED, CANCELLED
     }
 
     private final class BoogerCharge {
@@ -447,10 +536,6 @@ public class WeaponListener implements Listener {
                 }
                 if (!WeaponListener.this.isHoldingBoogerSniper(player)) {
                     charge.release(ReleaseReason.ITEM_SWAPPED);
-                    return;
-                }
-                if (!player.isSneaking()) {
-                    charge.release(ReleaseReason.UN_SNEAK);
                     return;
                 }
                 charge.ticks++;
@@ -525,7 +610,8 @@ public class WeaponListener implements Listener {
         int[] tuning = LEVEL_TUNING[level];
         int damage = tuning[0];
         int count = tuning[1];
-        int cooldown = tuning[2];
+        int maxCooldown = this.plugin.getCooldownFor(NoseItem.NoseType.BOOGER_SNIPER);
+        int cooldown = Math.max(1, Math.round(tuning[2] * (float) maxCooldown / DEFAULT_MAX_COOLDOWN));
 
         // Spread widens with level 3 (scatter) and level 5 (shotgun).
         double spread = switch (level) {

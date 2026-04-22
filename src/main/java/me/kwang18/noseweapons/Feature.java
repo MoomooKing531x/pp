@@ -9,8 +9,7 @@ public enum Feature {
     ABILITIES("abilities", "Shift + right-click ability activations"),
     PASSIVES("passives", "Passive effects while holding a nose (e.g. Ender Dragon Nose buffs)"),
     PARTICLES("particles", "Cosmetic particle effects on abilities and projectiles"),
-    SHEARING("shearing", "Crouch + shear mob to harvest a species-specific nose"),
-    PLAYER_SHEAR("playershear", "Allow crouch-shearing players below 50% health");
+    SHEARING("shearing", "Crouch + shear mob to harvest a species-specific nose");
 
     private final String key;
     private final String description;

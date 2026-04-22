@@ -19,17 +19,20 @@ public class NoseWeapons extends JavaPlugin {
     private final Map<NoseItem.NoseType, NamespacedKey> recipeKeys = new EnumMap<>(NoseItem.NoseType.class);
     private final Map<String, NamespacedKey> extraRecipeKeys = new HashMap<>();
     private final Set<Feature> enabledFeatures = EnumSet.allOf(Feature.class);
+    private final Map<NoseItem.NoseType, Integer> cooldownOverrides = new EnumMap<>(NoseItem.NoseType.class);
 
     @Override
     public void onEnable() {
         this.saveDefaultConfig();
         this.loadFeatureStates();
+        this.loadCooldownOverrides();
 
         WeaponCommands commandExecutor = new WeaponCommands(this);
         this.bindCommand("givenose", commandExecutor);
         this.bindCommand("givenoseitem", commandExecutor);
         this.bindCommand("nosecrafting", commandExecutor);
         this.bindCommand("nosetoggle", commandExecutor);
+        this.bindCommand("nosecooldown", commandExecutor);
         this.bindCommand("nosehelp", commandExecutor);
 
         this.getServer().getPluginManager().registerEvents(new WeaponListener(this), this);
@@ -101,6 +104,51 @@ public class NoseWeapons extends JavaPlugin {
 
     public boolean isCraftingEnabled() {
         return this.isFeatureEnabled(Feature.CRAFTING);
+    }
+
+    // --- Cooldown overrides --------------------------------------------------
+
+    private void loadCooldownOverrides() {
+        this.cooldownOverrides.clear();
+        if (!this.getConfig().isConfigurationSection("cooldowns")) {
+            return;
+        }
+        for (String key : this.getConfig().getConfigurationSection("cooldowns").getKeys(false)) {
+            NoseItem.NoseType type = NoseItem.resolve(key);
+            if (type == null) {
+                this.getLogger().warning("Unknown nose in cooldown override: " + key);
+                continue;
+            }
+            int seconds = this.getConfig().getInt("cooldowns." + key);
+            if (seconds >= 0) {
+                this.cooldownOverrides.put(type, seconds);
+            }
+        }
+    }
+
+    /**
+     * Look up the current cooldown (in seconds) for a nose type, honouring
+     * any runtime override set via {@code /nosecooldown}.
+     */
+    public int getCooldownFor(NoseItem.NoseType type) {
+        Integer override = this.cooldownOverrides.get(type);
+        return override != null ? override : type.cooldownSeconds;
+    }
+
+    public Integer getCooldownOverride(NoseItem.NoseType type) {
+        return this.cooldownOverrides.get(type);
+    }
+
+    public void setCooldownOverride(NoseItem.NoseType type, int seconds) {
+        this.cooldownOverrides.put(type, seconds);
+        this.getConfig().set("cooldowns." + type.configKey(), seconds);
+        this.saveConfig();
+    }
+
+    public void resetCooldownOverride(NoseItem.NoseType type) {
+        this.cooldownOverrides.remove(type);
+        this.getConfig().set("cooldowns." + type.configKey(), null);
+        this.saveConfig();
     }
 
     private void registerRecipes() {

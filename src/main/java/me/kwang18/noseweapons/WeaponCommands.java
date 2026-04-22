@@ -25,9 +25,114 @@ public class WeaponCommands implements CommandExecutor {
             case "givenoseitem" -> this.giveNoseItem(sender, args);
             case "nosecrafting" -> this.toggleCrafting(sender, args);
             case "nosetoggle"   -> this.toggleFeature(sender, args);
+            case "nosecooldown" -> this.manageCooldown(sender, args);
             case "nosehelp"     -> this.showHelp(sender);
             default -> false;
         };
+    }
+
+    private boolean manageCooldown(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("noseweapons.admin")) {
+            sender.sendMessage(this.plugin.bannerPrefix() + ChatColor.RED + "No permission.");
+            return true;
+        }
+        if (args.length == 0) {
+            this.listCooldowns(sender);
+            return true;
+        }
+        String first = args[0].toLowerCase();
+
+        // /nosecooldown reset                -> reset every nose to default
+        // /nosecooldown reset <type>         -> reset one nose
+        if (first.equals("reset")) {
+            if (args.length == 1) {
+                for (NoseItem.NoseType t : NoseItem.NoseType.values()) {
+                    this.plugin.resetCooldownOverride(t);
+                }
+                sender.sendMessage(this.plugin.bannerPrefix() + ChatColor.GREEN
+                    + "Reset every nose cooldown to default.");
+                this.listCooldowns(sender);
+                return true;
+            }
+            NoseItem.NoseType resetType = NoseItem.resolve(args[1]);
+            if (resetType == null) {
+                sender.sendMessage(this.plugin.bannerPrefix() + ChatColor.RED
+                    + "Unknown nose: " + args[1]);
+                this.listCooldowns(sender);
+                return true;
+            }
+            this.plugin.resetCooldownOverride(resetType);
+            sender.sendMessage(this.plugin.bannerPrefix() + ChatColor.GREEN
+                + "Reset " + resetType.configKey() + " cooldown to "
+                + resetType.cooldownSeconds + "s (default).");
+            return true;
+        }
+
+        // /nosecooldown list
+        if (first.equals("list")) {
+            this.listCooldowns(sender);
+            return true;
+        }
+
+        // /nosecooldown <type> <seconds|reset>
+        NoseItem.NoseType type = NoseItem.resolve(first);
+        if (type == null) {
+            sender.sendMessage(this.plugin.bannerPrefix() + ChatColor.RED
+                + "Unknown nose: " + args[0]);
+            sender.sendMessage(this.plugin.bannerPrefix() + ChatColor.GRAY
+                + "Usage: /nosecooldown <type> <seconds|reset>  |  /nosecooldown reset [type]  |  /nosecooldown list");
+            return true;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(this.plugin.bannerPrefix() + ChatColor.RED
+                + "Missing argument. Usage: /nosecooldown " + type.configKey() + " <seconds|reset>");
+            return true;
+        }
+        if (args[1].equalsIgnoreCase("reset")) {
+            this.plugin.resetCooldownOverride(type);
+            sender.sendMessage(this.plugin.bannerPrefix() + ChatColor.GREEN
+                + "Reset " + type.configKey() + " cooldown to "
+                + type.cooldownSeconds + "s (default).");
+            return true;
+        }
+        int seconds;
+        try {
+            seconds = Integer.parseInt(args[1]);
+        } catch (NumberFormatException e) {
+            sender.sendMessage(this.plugin.bannerPrefix() + ChatColor.RED
+                + "Seconds must be a non-negative integer (or 'reset'). Got: " + args[1]);
+            return true;
+        }
+        if (seconds < 0) {
+            sender.sendMessage(this.plugin.bannerPrefix() + ChatColor.RED
+                + "Seconds must be >= 0.");
+            return true;
+        }
+        this.plugin.setCooldownOverride(type, seconds);
+        sender.sendMessage(this.plugin.bannerPrefix() + ChatColor.GREEN
+            + "Set " + type.configKey() + " cooldown to " + seconds + "s (was "
+            + type.cooldownSeconds + "s default).");
+        if (type == NoseItem.NoseType.BOOGER_SNIPER) {
+            sender.sendMessage(this.plugin.bannerPrefix() + ChatColor.GRAY
+                + "Booger Sniper per-level cooldowns scale from this max charge value.");
+        }
+        return true;
+    }
+
+    private void listCooldowns(CommandSender sender) {
+        sender.sendMessage(this.plugin.bannerPrefix() + ChatColor.GOLD + "Nose cooldowns (seconds):");
+        for (NoseItem.NoseType t : NoseItem.NoseType.values()) {
+            Integer override = this.plugin.getCooldownOverride(t);
+            int current = this.plugin.getCooldownFor(t);
+            String tag = override == null ? ChatColor.GREEN + "[default]"
+                                          : ChatColor.AQUA + "[override]";
+            sender.sendMessage(" " + tag + ChatColor.RESET + " "
+                + ChatColor.YELLOW + t.configKey()
+                + ChatColor.GRAY + " -> "
+                + ChatColor.WHITE + current + "s"
+                + ChatColor.DARK_GRAY + " (default " + t.cooldownSeconds + "s)");
+        }
+        sender.sendMessage(ChatColor.GRAY + "Usage: /nosecooldown <type> <seconds|reset>, /nosecooldown reset [type], /nosecooldown list");
     }
 
     private boolean giveWeapon(CommandSender sender, String[] args) {
@@ -182,12 +287,14 @@ public class WeaponCommands implements CommandExecutor {
             + ChatColor.GRAY + " -- toggle shaped recipes");
         lines.add(ChatColor.YELLOW + "/nosetoggle <feature> [on|off]"
             + ChatColor.GRAY + " -- toggle a named feature (list with no args)");
+        lines.add(ChatColor.YELLOW + "/nosecooldown <type> <seconds|reset>"
+            + ChatColor.GRAY + " -- override per-weapon cooldown; 'reset' or '/nosecooldown reset' restores defaults");
         lines.add(ChatColor.YELLOW + "/nosehelp"
             + ChatColor.GRAY + " -- show this list");
         lines.add(ChatColor.GOLD + "Gameplay tips:");
         lines.add(ChatColor.GRAY + " - Shift + Right-click a nose weapon to activate its ability.");
-        lines.add(ChatColor.GRAY + " - Booger Sniper: hold Shift + Right-click to charge, release to fire (1-5s).");
-        lines.add(ChatColor.GRAY + " - Crouch + Shear a mob (or player) under 50% HP to harvest their nose.");
+        lines.add(ChatColor.GRAY + " - Booger Sniper: Shift + Right-click to begin charging, Right-click again to fire (1-5s).");
+        lines.add(ChatColor.GRAY + " - Crouch + Shear a supported mob under 50% HP to harvest its nose.");
         lines.forEach(sender::sendMessage);
         return true;
     }

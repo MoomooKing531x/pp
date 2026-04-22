@@ -3,7 +3,6 @@ package me.kwang18.noseweapons;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import org.bukkit.ChatColor;
@@ -44,14 +43,14 @@ import org.bukkit.inventory.meta.Damageable;
  *
  * This listener replaces that behaviour and lives inside NoseWeapons directly
  * so the two plugins are one cohesive install. Species-specific ingredients
- * (CustomModelData 2001-2008) are dropped on the correct mobs, and players
- * under 50% HP can also be "sheared" for a random ingredient.
+ * (CustomModelData 2001-2008) are dropped on the correct mobs when the player
+ * crouch-shears them below 50% HP. There is no "player nose" -- players
+ * cannot be sheared.
  */
 public class ShearListener implements Listener {
     private final NoseWeapons plugin;
     private final Set<UUID> shearedEntities = new HashSet<>();
     private final Map<Class<? extends LivingEntity>, String> mobToNose = new HashMap<>();
-    private final Random random = new Random();
 
     public ShearListener(NoseWeapons plugin) {
         this.plugin = plugin;
@@ -85,17 +84,9 @@ public class ShearListener implements Listener {
         if (!(raw instanceof LivingEntity target)) {
             return;
         }
-
-        if (target instanceof Player playerTarget) {
-            if (!this.plugin.isFeatureEnabled(Feature.PLAYER_SHEAR)) {
-                player.sendMessage(this.plugin.bannerPrefix() + ChatColor.GRAY + "Player shearing is disabled.");
-                event.setCancelled(true);
-                return;
-            }
-            this.tryShearPlayer(player, playerTarget, hand, event);
-            return;
+        if (target instanceof Player) {
+            return; // No player nose -- players are never sheared.
         }
-
         this.tryShearMob(player, target, hand, event);
     }
 
@@ -137,52 +128,6 @@ public class ShearListener implements Listener {
             target.getWorld().spawnParticle(Particle.DUST, target.getLocation().add(0.0, target.getHeight() * 0.75, 0.0),
                 15, 0.2, 0.2, 0.2,
                 new Particle.DustOptions(rgbFromChatColor(def.color), 1.2f));
-        }
-    }
-
-    /**
-     * Shear a player: requires target under 50% HP. Drops a random ingredient
-     * from the roster, applies a brief nausea/wither burst, and damages the
-     * shears. The target is added to the sheared-entity set for the rest of
-     * their life so you can't stack harvests on the same player without them
-     * respawning.
-     */
-    private void tryShearPlayer(Player shearer, Player target, ItemStack shears, PlayerInteractEntityEvent event) {
-        event.setCancelled(true);
-        if (target == shearer) {
-            shearer.sendMessage(this.plugin.bannerPrefix() + ChatColor.GRAY + "You can't shear your own nose!");
-            return;
-        }
-        if (this.shearedEntities.contains(target.getUniqueId())) {
-            shearer.sendMessage(this.plugin.bannerPrefix() + ChatColor.RED + target.getName() + " has no nose left to harvest.");
-            return;
-        }
-        if (!this.isBelowHalfHealth(target)) {
-            shearer.sendMessage(this.plugin.bannerPrefix() + ChatColor.YELLOW
-                + target.getName() + " is above 50% health -- soften them up first.");
-            return;
-        }
-
-        this.shearedEntities.add(target.getUniqueId());
-        this.damageShears(shearer, shears);
-
-        // Randomise ingredient harvest from the full roster so player-shears
-        // feel punchy and valuable.
-        String[] pool = NoseIngredient.DEFS.keySet().toArray(new String[0]);
-        NoseIngredient.Def def = NoseIngredient.DEFS.get(pool[this.random.nextInt(pool.length)]);
-        shearer.getInventory().addItem(NoseIngredient.create(def, this.plugin));
-        target.damage(2.0);
-
-        shearer.sendMessage(this.plugin.bannerPrefix() + def.color
-            + "You sheared " + target.getName() + "'s nose! (" + def.displayName + ")");
-        target.sendMessage(this.plugin.bannerPrefix() + ChatColor.RED
-            + shearer.getName() + " sheared off your nose! You feel much lighter.");
-        target.getWorld().playSound(target.getLocation(), Sound.ENTITY_SHEEP_SHEAR, 1.0f, 0.6f);
-        target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_HURT, 1.0f, 1.3f);
-        if (this.plugin.isFeatureEnabled(Feature.PARTICLES)) {
-            target.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, target.getLocation().add(0.0, 1.6, 0.0), 10);
-            target.getWorld().spawnParticle(Particle.DUST, target.getLocation().add(0.0, 1.6, 0.0), 25, 0.25, 0.25, 0.25,
-                new Particle.DustOptions(Color.fromRGB(220, 30, 30), 1.3f));
         }
     }
 

@@ -7,4 +7,9 @@ features:
   passives: true
   particles: true
   shearing: true
-  playershear: true
+
+# Per-weapon cooldown overrides (seconds). Managed at runtime with
+# /nosecooldown <type> <seconds|reset>. Remove or set to null to fall back
+# to the hard-coded default for that nose. For the Booger Sniper this value
+# is the max-charge cooldown; lower charge levels scale proportionally.
+cooldowns: {}

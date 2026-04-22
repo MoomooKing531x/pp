@@ -52,6 +52,38 @@ public class NoseItem {
         return getNoseType(item, plugin) != null;
     }
 
+    /**
+     * Parse a user-supplied identifier (command arg, config key, etc.) into a
+     * {@link NoseType}. Accepts lowercase names, underscore or dash separated,
+     * plus a couple of common short aliases.
+     */
+    public static NoseType resolve(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String normalised = raw.toLowerCase().replace('-', '_').trim();
+        switch (normalised) {
+            case "booger":
+            case "sniper":
+            case "boogersniper":
+                return NoseType.BOOGER_SNIPER;
+            case "enderdragon":
+            case "dragon":
+            case "ender":
+                return NoseType.ENDER_DRAGON;
+            case "snotbubble":
+            case "bubble":
+                return NoseType.SNOT_BUBBLE;
+            default:
+                break;
+        }
+        try {
+            return NoseType.valueOf(normalised.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
     public enum NoseType {
         BLOODY("Bloody Nose", ChatColor.RED, 1001, 60,
             ChatColor.GRAY + "Shift + Right-Click: Costs 2 hearts",
@@ -79,12 +111,12 @@ public class NoseItem {
             ChatColor.GRAY + "No self-damage, can fireball jump",
             ChatColor.GRAY + "Passive: Strength II & Speed II while held",
             ChatColor.DARK_GRAY + "Cooldown: 30 seconds"),
-        BOOGER_SNIPER("Booger Sniper Nose", ChatColor.GREEN, 1007, 100,
+        BOOGER_SNIPER("Booger Sniper Nose", ChatColor.GREEN, 1007, 40,
             ChatColor.GRAY + "Ability: Pressurized Mucous Ejection",
-            ChatColor.GRAY + "Hold Shift + Right-Click to charge (1-5s)",
-            ChatColor.GRAY + "Release to fire; payload escalates with charge",
+            ChatColor.GRAY + "Shift + Right-Click to begin charging (1-5s)",
+            ChatColor.GRAY + "Right-Click again to fire",
             ChatColor.GRAY + "Max charge (5s) fires a shotgun blast",
-            ChatColor.DARK_GRAY + "Max charge cooldown: 100 seconds");
+            ChatColor.DARK_GRAY + "Max charge cooldown: 40 seconds");
 
         public final String displayName;
         public final ChatColor color;
@@ -98,6 +130,11 @@ public class NoseItem {
             this.modelData = modelData;
             this.cooldownSeconds = cooldown;
             this.lore = lore;
+        }
+
+        /** Stable lowercase key used for config.yml and command arguments. */
+        public String configKey() {
+            return this.name().toLowerCase();
         }
     }
 }

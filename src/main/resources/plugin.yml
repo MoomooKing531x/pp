@@ -18,8 +18,12 @@ commands:
     usage: /nosecrafting <true|false>
     permission: noseweapons.admin
   nosetoggle:
-    description: Toggle a NoseWeapons feature (crafting, shearing, passives, abilities, particles, playershear).
+    description: Toggle a NoseWeapons feature (crafting, shearing, passives, abilities, particles).
     usage: /nosetoggle <feature> [on|off]
+    permission: noseweapons.admin
+  nosecooldown:
+    description: View, override, or reset per-weapon cooldowns.
+    usage: /nosecooldown <type> <seconds|reset>  |  /nosecooldown reset [type]  |  /nosecooldown list
     permission: noseweapons.admin
   nosehelp:
     description: Show every NoseWeapons command.
