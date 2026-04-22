@@ -1,0 +1,10 @@
+# NoseWeapons runtime feature toggles. Each can be flipped at runtime with
+# /nosetoggle <feature> [on|off]. Changes there are written back to this file
+# so server restarts preserve the toggles.
+features:
+  crafting: true
+  abilities: true
+  passives: true
+  particles: true
+  shearing: true
+  playershear: true

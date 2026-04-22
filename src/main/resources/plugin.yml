@@ -1,0 +1,34 @@
+name: NoseWeapons
+version: 1.1
+author: Kwang18
+main: me.kwang18.noseweapons.NoseWeapons
+api-version: "1.21"
+description: Custom nose weapons with charged Booger Sniper and crouch-shear harvesting.
+commands:
+  givenose:
+    description: Give a custom nose weapon to a player.
+    usage: /givenose <bloody|snotty|snoring|sneezing|snot_bubble|ender_dragon|booger_sniper> [player]
+    permission: noseweapons.give
+  givenoseitem:
+    description: Give a special nose item (from shearing) to a player.
+    usage: /givenoseitem <villager|warden|wither|panda|spider|elderguardian|sniffer|enderdragon> [player]
+    permission: noseweapons.give
+  nosecrafting:
+    description: Enable or disable nose weapon crafting recipes.
+    usage: /nosecrafting <true|false>
+    permission: noseweapons.admin
+  nosetoggle:
+    description: Toggle a NoseWeapons feature (crafting, shearing, passives, abilities, particles, playershear).
+    usage: /nosetoggle <feature> [on|off]
+    permission: noseweapons.admin
+  nosehelp:
+    description: Show every NoseWeapons command.
+    usage: /nosehelp
+    permission: noseweapons.help
+permissions:
+  noseweapons.give:
+    default: op
+  noseweapons.admin:
+    default: op
+  noseweapons.help:
+    default: true

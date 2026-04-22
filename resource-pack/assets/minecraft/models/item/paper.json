@@ -1,0 +1,16 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "item/paper"
+  },
+  "overrides": [
+    { "predicate": { "custom_model_data": 2001 }, "model": "item/nose_ingredient_warden" },
+    { "predicate": { "custom_model_data": 2002 }, "model": "item/nose_ingredient_wither" },
+    { "predicate": { "custom_model_data": 2003 }, "model": "item/nose_ingredient_panda" },
+    { "predicate": { "custom_model_data": 2004 }, "model": "item/nose_ingredient_spider" },
+    { "predicate": { "custom_model_data": 2005 }, "model": "item/nose_ingredient_elderguardian" },
+    { "predicate": { "custom_model_data": 2006 }, "model": "item/nose_ingredient_sniffer" },
+    { "predicate": { "custom_model_data": 2007 }, "model": "item/nose_ingredient_enderdragon" },
+    { "predicate": { "custom_model_data": 2008 }, "model": "item/nose_ingredient_villager" }
+  ]
+}

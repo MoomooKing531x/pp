@@ -1,0 +1,15 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "item/diamond_sword"
+  },
+  "overrides": [
+    { "predicate": { "custom_model_data": 1001 }, "model": "item/nose_bloody" },
+    { "predicate": { "custom_model_data": 1002 }, "model": "item/nose_snotty" },
+    { "predicate": { "custom_model_data": 1003 }, "model": "item/nose_snoring" },
+    { "predicate": { "custom_model_data": 1004 }, "model": "item/nose_sneezing" },
+    { "predicate": { "custom_model_data": 1005 }, "model": "item/nose_snot_bubble" },
+    { "predicate": { "custom_model_data": 1006 }, "model": "item/nose_ender_dragon" },
+    { "predicate": { "custom_model_data": 1007 }, "model": "item/nose_booger_sniper" }
+  ]
+}
