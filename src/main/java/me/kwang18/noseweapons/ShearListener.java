@@ -11,6 +11,7 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.entity.ComplexEntityPart;
 import org.bukkit.entity.ElderGuardian;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
@@ -81,6 +82,12 @@ public class ShearListener implements Listener {
             return;
         }
         Entity raw = event.getRightClicked();
+        // The Ender Dragon is made of multiple ComplexEntityParts (head, body,
+        // wings, tail); right-clicks land on those parts, not on the dragon
+        // itself, so we have to redirect to the parent.
+        if (raw instanceof ComplexEntityPart part) {
+            raw = part.getParent();
+        }
         if (!(raw instanceof LivingEntity target)) {
             return;
         }
