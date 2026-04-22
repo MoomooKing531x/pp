@@ -10,7 +10,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import java.util.ArrayList;
+import java.util.List;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -217,17 +221,24 @@ public class NoseWeapons extends JavaPlugin {
             recipe.setIngredient('S', Material.DIAMOND_SWORD);
         });
 
-        // Booger Sniper Nose -- modelled after the concept-art recipe:
-        //   E N E       E = Ender Pearl,     N = Warden Nose
-        //   T C T       T = TNT,             C = Conduit
-        //   S P B       S = Smithing Tmplt,  P = Netherite Pickaxe,  B = Netherite Block
-        this.addRecipe(NoseItem.NoseType.BOOGER_SNIPER, "booger_sniper_sword", new String[]{"ENE", "TCT", "SPB"}, recipe -> {
-            recipe.setIngredient('E', Material.ENDER_PEARL);
-            recipe.setIngredient('N', NoseIngredient.create(NoseIngredient.DEFS.get("warden"), this));
+        // Booger Sniper Nose -- matches the concept-art grid the user drew:
+        //   A N A   A = Amethyst Shard,   N = Any species nose
+        //   T W T   T = TNT,              W = Water Bucket
+        //   C P B   C = Conduit,          P = Diamond Pickaxe,   B = Netherite Block
+        // The nose slot accepts any of the eight species noses so the player
+        // can craft it with whatever nose they happen to have sheared.
+        List<ItemStack> anyNose = new ArrayList<>();
+        for (NoseIngredient.Def def : NoseIngredient.DEFS.values()) {
+            anyNose.add(NoseIngredient.create(def, this));
+        }
+        RecipeChoice anyNoseChoice = new RecipeChoice.ExactChoice(anyNose);
+        this.addRecipe(NoseItem.NoseType.BOOGER_SNIPER, "booger_sniper_sword", new String[]{"ANA", "TWT", "CPB"}, recipe -> {
+            recipe.setIngredient('A', Material.AMETHYST_SHARD);
+            recipe.setIngredient('N', anyNoseChoice);
             recipe.setIngredient('T', Material.TNT);
+            recipe.setIngredient('W', Material.WATER_BUCKET);
             recipe.setIngredient('C', Material.CONDUIT);
-            recipe.setIngredient('S', Material.SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE);
-            recipe.setIngredient('P', Material.NETHERITE_PICKAXE);
+            recipe.setIngredient('P', Material.DIAMOND_PICKAXE);
             recipe.setIngredient('B', Material.NETHERITE_BLOCK);
         });
     }
