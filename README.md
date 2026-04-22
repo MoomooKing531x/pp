@@ -65,13 +65,10 @@ or `/nosetoggle crafting <on|off>`.
 The Booger Sniper Nose uses the recipe from the concept art:
 
 ```
-A N A     A = Amethyst Shard       N = Any species nose
-T W T     T = TNT                  W = Water Bucket
-C P B     C = Conduit              P = Diamond Pickaxe      B = Netherite Block
+A O A     A = Amethyst Shard       O = Totem of Undying
+T N T     T = TNT                  N = Warden Nose
+S C H     S = Sculk Shrieker       C = Crossbow             H = Heavy Core
 ```
-
-The `N` slot accepts any of the eight shear-harvested noses (villager,
-warden, wither, panda, spider, elder guardian, sniffer, or ender dragon).
 
 Full recipes are defined in [`NoseWeapons.java`](src/main/java/me/kwang18/noseweapons/NoseWeapons.java).
 

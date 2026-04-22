@@ -10,9 +10,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import java.util.ArrayList;
-import java.util.List;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
@@ -221,25 +218,19 @@ public class NoseWeapons extends JavaPlugin {
             recipe.setIngredient('S', Material.DIAMOND_SWORD);
         });
 
-        // Booger Sniper Nose -- matches the concept-art grid the user drew:
-        //   A N A   A = Amethyst Shard,   N = Any species nose
-        //   T W T   T = TNT,              W = Water Bucket
-        //   C P B   C = Conduit,          P = Diamond Pickaxe,   B = Netherite Block
-        // The nose slot accepts any of the eight species noses so the player
-        // can craft it with whatever nose they happen to have sheared.
-        List<ItemStack> anyNose = new ArrayList<>();
-        for (NoseIngredient.Def def : NoseIngredient.DEFS.values()) {
-            anyNose.add(NoseIngredient.create(def, this));
-        }
-        RecipeChoice anyNoseChoice = new RecipeChoice.ExactChoice(anyNose);
-        this.addRecipe(NoseItem.NoseType.BOOGER_SNIPER, "booger_sniper_sword", new String[]{"ANA", "TWT", "CPB"}, recipe -> {
+        // Booger Sniper Nose -- recipe specified by the user:
+        //   A O A   A = Amethyst Shard,     O = Totem of Undying
+        //   T N T   T = TNT,                N = Warden Nose
+        //   S C H   S = Sculk Shrieker,     C = Crossbow,   H = Heavy Core
+        this.addRecipe(NoseItem.NoseType.BOOGER_SNIPER, "booger_sniper_sword", new String[]{"AOA", "TNT", "SCH"}, recipe -> {
             recipe.setIngredient('A', Material.AMETHYST_SHARD);
-            recipe.setIngredient('N', anyNoseChoice);
+            recipe.setIngredient('O', Material.TOTEM_OF_UNDYING);
             recipe.setIngredient('T', Material.TNT);
-            recipe.setIngredient('W', Material.WATER_BUCKET);
-            recipe.setIngredient('C', Material.CONDUIT);
-            recipe.setIngredient('P', Material.DIAMOND_PICKAXE);
-            recipe.setIngredient('B', Material.NETHERITE_BLOCK);
+            recipe.setIngredient('N', new RecipeChoice.ExactChoice(
+                NoseIngredient.create(NoseIngredient.DEFS.get("warden"), this)));
+            recipe.setIngredient('S', Material.SCULK_SHRIEKER);
+            recipe.setIngredient('C', Material.CROSSBOW);
+            recipe.setIngredient('H', Material.HEAVY_CORE);
         });
     }
 
